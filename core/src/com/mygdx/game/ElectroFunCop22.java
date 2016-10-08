@@ -66,7 +66,7 @@ public class ElectroFunCop22 extends ApplicationAdapter {
 		camera = new PerspectiveCamera(75,Gdx.graphics.getWidth(),Gdx.graphics.getHeight());
 
         camera.position.set(0f,100f,100f);
-        camera.lookAt(0f,100f,0f);
+        camera.lookAt(0f,1f,0f);
 
         camera.near = 0.1f;
         camera.far = 300.0f;
@@ -76,14 +76,14 @@ public class ElectroFunCop22 extends ApplicationAdapter {
         UBJsonReader jsonReader = new UBJsonReader();
 
         G3dModelLoader modelLoader = new G3dModelLoader(jsonReader);
-        model = modelLoader.loadModel(Gdx.files.getFileHandle("data/walking_3.g3db", FileType.Internal));
+        model = modelLoader.loadModel(Gdx.files.getFileHandle("data/old-man.g3db", FileType.Internal));
         modelInstance = new ModelInstance(model);
 
         environment = new Environment();
         environment.set(new ColorAttribute(ColorAttribute.AmbientLight,0.8f,0.8f,0.8f,1.0f));
 	
         controller = new AnimationController(modelInstance);
-        controller.setAnimation("mixamo.com", 1, new AnimationController.AnimationListener() {
+        controller.setAnimation("Default Take", -1, new AnimationController.AnimationListener() {
             @Override
             public void onEnd(AnimationController.AnimationDesc animation) {
             	MyTextInputListener listener = new MyTextInputListener();
