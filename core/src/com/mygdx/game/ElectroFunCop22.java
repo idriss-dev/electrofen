@@ -1,138 +1,121 @@
 package com.mygdx.game;
 
-import java.io.FileNotFoundException;
+import java.util.Iterator;
 
 import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Files.FileType;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input.TextInputListener;
-import com.badlogic.gdx.InputMultiplexer;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Mesh;
-import com.badlogic.gdx.graphics.PerspectiveCamera;
-import com.badlogic.gdx.graphics.VertexAttributes.Usage;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g3d.Environment;
-import com.badlogic.gdx.graphics.g3d.Model;
-import com.badlogic.gdx.graphics.g3d.ModelBatch;
-import com.badlogic.gdx.graphics.g3d.ModelInstance;
-import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
-import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
-import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
-import com.badlogic.gdx.graphics.g3d.loader.G3dModelLoader;
-import com.badlogic.gdx.graphics.g3d.utils.AnimationController;
-import com.badlogic.gdx.graphics.g3d.utils.AnimationController.AnimationDesc;
-import com.badlogic.gdx.graphics.g3d.utils.AnimationController.AnimationListener;
-import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
-import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextField;
-import com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle;
-import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.utils.UBJsonReader;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
-
-import com.badlogic.gdx.graphics.GL30;;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.TimeUtils;
 
 public class ElectroFunCop22 extends ApplicationAdapter {
-	
-	private PerspectiveCamera camera;
-    private ModelBatch modelBatch;
-    private Model model;
-    private ModelInstance modelInstance;
-    private Environment environment;
-    private AnimationController controller;
-    private TextField txtUsername;
-    Skin skin;
-    
-    private String yourName;
-    BitmapFont yourBitmapFontName;
-    
-    public Stage stage;
-    public Label label;
-    public BitmapFont font;
-	
-	@SuppressWarnings("deprecation")
-	@Override
-	public void create () {
-		stage = new Stage();
-		font = new BitmapFont();
-		camera = new PerspectiveCamera(75,Gdx.graphics.getWidth(),Gdx.graphics.getHeight());
+   private Texture dropImage;
+   private Texture bucketImage;
+   private SpriteBatch batch;
+   private OrthographicCamera camera;
+   private Rectangle bucket;
+   private Array<Rectangle> raindrops;
+   private Array<Rectangle> buckets;
+   private long lastDropTime;
 
-        camera.position.set(0f,100f,100f);
-        camera.lookAt(0f,1f,0f);
+   @Override
+   public void create() {
+      // load the images for the droplet and the bucket, 64x64 pixels each
+      dropImage = new Texture(Gdx.files.internal("droplet.png"));
+      bucketImage = new Texture(Gdx.files.internal("bucket.png"));
 
-        camera.near = 0.1f;
-        camera.far = 300.0f;
+      // create the camera and the SpriteBatch
+      camera = new OrthographicCamera();
+      camera.setToOrtho(false, 800, 480);
+      batch = new SpriteBatch();
+      // create the raindrops array and spawn the first raindrop
+      raindrops = new Array<Rectangle>();
+      buckets = new Array<Rectangle>();
+   }
 
-        modelBatch = new ModelBatch();
+   private void spawnRaindrop() {
+      Rectangle raindrop = new Rectangle();
+      raindrop.x = MathUtils.random(0, 800-64);
+      raindrop.y = MathUtils.random(0, 800-64);
+      raindrop.width = 64;
+      raindrop.height = 64;
+      raindrops.add(raindrop);
+   }
+   private void spawnBucket() {
+      Rectangle bucket = new Rectangle();
+      bucket.x = MathUtils.random(0, 800-64);
+      bucket.y = MathUtils.random(0, 800-64);
+      bucket.width = 64;
+      bucket.height = 64;
+      buckets.add(bucket);
+   }
 
-        UBJsonReader jsonReader = new UBJsonReader();
+   @Override
+   public void render() {
+      // clear the screen with a dark blue color. The
+      // arguments to glClearColor are the red, green
+      // blue and alpha component in the range [0,1]
+      // of the color to be used to clear the screen.
+      Gdx.gl.glClearColor(0, 0, 0.2f, 1);
+      Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        G3dModelLoader modelLoader = new G3dModelLoader(jsonReader);
-        model = modelLoader.loadModel(Gdx.files.getFileHandle("data/old-man.g3db", FileType.Internal));
-        modelInstance = new ModelInstance(model);
+      // tell the camera to update its matrices.
+      camera.update();
 
-        environment = new Environment();
-        environment.set(new ColorAttribute(ColorAttribute.AmbientLight,0.8f,0.8f,0.8f,1.0f));
-	
-        controller = new AnimationController(modelInstance);
-        controller.setAnimation("Default Take", -1, new AnimationController.AnimationListener() {
-            @Override
-            public void onEnd(AnimationController.AnimationDesc animation) {
-            	MyTextInputListener listener = new MyTextInputListener();
-                Gdx.input.getTextInput(listener, "Give us your name", "", "");
-            }
+      // tell the SpriteBatch to render in the
+      // coordinate system specified by the camera.
+      batch.setProjectionMatrix(camera.combined);
 
-            @Override
-            public void onLoop(AnimationController.AnimationDesc animation) {
-                Gdx.app.log("INFO","Animation Ended");
-            }
-        });
-        
-        
-		
-	}
+      // begin a new batch and draw the bucket and
+      // all drops
+      batch.begin();
+      for(Rectangle bucket: buckets) {
+         batch.draw(bucketImage, bucket.x, bucket.y);
+      }
+      for(Rectangle raindrop: raindrops) {
+          batch.draw(dropImage, raindrop.x, raindrop.y);
+      }
+      batch.end();
 
-	@Override
-	public void render () {
-		Gdx.gl.glViewport(0,0,Gdx.graphics.getWidth(),Gdx.graphics.getHeight());
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT|GL20.GL_DEPTH_BUFFER_BIT);
+      if(Gdx.input.isKeyPressed(Keys.A)){
+    	  spawnBucket();
+      }
+      if(Gdx.input.isKeyPressed(Keys.B)){
+    	  spawnRaindrop();
+      }
+      if(Gdx.input.isKeyPressed(Keys.C)){
+    	  	Iterator<Rectangle> iter = buckets.iterator();
+	        while(iter.hasNext()) {
+	           iter.next();
+	           iter.remove();
+	           break;
+	        }
+      }
+      if(Gdx.input.isKeyPressed(Keys.D)){
+    	  Iterator<Rectangle> iter = raindrops.iterator();
+	        while(iter.hasNext()) {
+	           iter.next();
+	           iter.remove();
+	           break;
+	        }
+      }
 
-        camera.update();
-        controller.update(Gdx.graphics.getDeltaTime());
+   }
 
-        modelBatch.begin(camera);
-        modelBatch.render(modelInstance);
-        modelBatch.end();
-        
-        stage.draw();
-        
-	}
-	
-	public class MyTextInputListener implements TextInputListener {
-	   @Override
-	   public void input (String text) {
-		   
-	       label = new Label("Welcome " + text, new Label.LabelStyle(font, Color.WHITE));
-           stage.addActor(label);
-           
-	   }
-
-	   @Override
-	   public void canceled () {
-	   }
-	}
-	
-	@Override
-	public void dispose () {
-		modelBatch.dispose();
-        model.dispose();
-	}
+   @Override
+   public void dispose() {
+      // dispose of all the native resources
+      dropImage.dispose();
+      bucketImage.dispose();
+      batch.dispose();
+   }
 }
