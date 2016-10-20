@@ -27,6 +27,7 @@ public class ElectroFunCop22 extends ApplicationAdapter {
     private static final int        WIDTH = 600;
     
     private static final int        TILE_UNIT = 25;
+    private static boolean 	isDialogShown = false;
     
     Animation                       girlRightAnimation;  
     Animation                       girlLeftAnimation; 
@@ -39,6 +40,7 @@ public class ElectroFunCop22 extends ApplicationAdapter {
     Texture                         houseImage;
     Texture                         waterImage;
     Texture                         treeImage;
+    Texture							dialogGirlImage;
     
     TextureRegion[]                 girlRightFrames;   
     TextureRegion[]                 girlLeftFrames;
@@ -54,10 +56,13 @@ public class ElectroFunCop22 extends ApplicationAdapter {
     
     Rectangle moulin;
     Rectangle house;
+    Rectangle girl = new Rectangle();
     
     float girlSpeed = 100.0f; // 100 pixels per second.
     float girlX = HEIGHT / 2;
     float girlY = WIDTH / 2;
+    
+    private Sound doorSound;
 
    @Override
    public void create() {
@@ -67,6 +72,9 @@ public class ElectroFunCop22 extends ApplicationAdapter {
 	   houseImage = new Texture(Gdx.files.internal("house.png"));
 	   waterImage = new Texture(Gdx.files.internal("water.png"));
 	   treeImage = new Texture(Gdx.files.internal("tree.png"));
+	   dialogGirlImage = new Texture(Gdx.files.internal("girl-dialog.png"));
+	   
+	   doorSound = Gdx.audio.newSound(Gdx.files.internal("door.wav"));
 	   
        TextureRegion[][] tmp = TextureRegion.split(girlSheet, girlSheet.getWidth()/FRAME_GIRL_COLS, girlSheet.getHeight()/FRAME_GIRL_ROWS);              // #10
        
@@ -170,6 +178,8 @@ public class ElectroFunCop22 extends ApplicationAdapter {
    
    private void renderHouse() {
 	  house = new Rectangle();
+	  house.width = 200;
+	  house.height = 200;
 	  house.x = 50;
 	  house.y = 300;
    }
@@ -177,9 +187,18 @@ public class ElectroFunCop22 extends ApplicationAdapter {
 
    @Override
    public void render() {
+	    girl.width = 64;
+	    girl.height = 64;
+	    
       if(Gdx.input.isKeyPressed(Keys.A)){
     	  renderRandomTree();
+    	  isDialogShown = true;
       }
+      
+      if(Gdx.input.isKeyPressed(Keys.ENTER)){
+    	  isDialogShown = false;
+      }
+      
 //      if(Gdx.input.isKeyPressed(Keys.B)){
 //    	  spawnRaindrop();
 //      }
@@ -208,18 +227,22 @@ public class ElectroFunCop22 extends ApplicationAdapter {
        if(Gdx.input.isKeyPressed(Keys.DPAD_LEFT)){
     	   girlX -= Gdx.graphics.getDeltaTime() * girlSpeed;
     	   currentGirlFrame = girlLeftAnimation.getKeyFrame(girlSpeed, true);
+    	   girl.x = girlX;
        }
 	   if(Gdx.input.isKeyPressed(Keys.DPAD_RIGHT)){
 		   girlX += Gdx.graphics.getDeltaTime() * girlSpeed;
 		   currentGirlFrame = girlRightAnimation.getKeyFrame(girlSpeed, true);
+		   girl.x = girlX;
 	   }
 	   if(Gdx.input.isKeyPressed(Keys.DPAD_UP)){
 		   girlY += Gdx.graphics.getDeltaTime() * girlSpeed;
 		   currentGirlFrame = girlTopAnimation.getKeyFrame(girlSpeed, true);
+		   girl.y = girlY;
 	   }
 	   if(Gdx.input.isKeyPressed(Keys.DPAD_DOWN)){
 		   girlY -= Gdx.graphics.getDeltaTime() * girlSpeed;
 		   currentGirlFrame = girlBottomAnimation.getKeyFrame(girlSpeed, true);
+		   girl.y = girlY;
 	   }
 	   
        spriteBatch.begin();
@@ -238,8 +261,15 @@ public class ElectroFunCop22 extends ApplicationAdapter {
        
        spriteBatch.draw(moulinImage, moulin.x, moulin.y);
        spriteBatch.draw(houseImage, house.x, house.y);
+       if(isDialogShown){
+    	   spriteBatch.draw(dialogGirlImage, 0, 0);
+       }
        spriteBatch.end();
-
+       
+   }
+   
+   public void showGirlThank(){
+	   
    }
 
    @Override
