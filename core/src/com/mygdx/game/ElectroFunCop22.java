@@ -1,6 +1,10 @@
 package com.mygdx.game;
 import com.fazecast.jSerialComm.*;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -68,6 +72,8 @@ public class ElectroFunCop22 extends ApplicationAdapter {
     float girlSpeed = 100.0f; // 100 pixels per second.
     float girlX = HEIGHT / 2;
     float girlY = WIDTH / 2;
+    
+    int treeNum = 0;
 
    @Override
    public void create() {
@@ -206,27 +212,29 @@ public class ElectroFunCop22 extends ApplicationAdapter {
 	          InputStream in = comPort.getInputStream();
 	          try
 	          {
-	        	 String arduino = "";
+	        	 String arduinoData = "";
 	        	 char nextChar;
 	             for (int j = 0; j < 100; ++j){
 	            	 nextChar = (char)in.read();
 	            	 if(nextChar != '\r')
-	            		 arduino += nextChar;
+	            		 arduinoData += nextChar;
 	            	 else
 	            		 break;
 	             } 
 	             
-	             System.out.print(arduino);
-	             arduino = "";
+	             JSONObject obj = new JSONObject(arduinoData);
+	             if(treeNum != obj.getInt("tree")){
+	            	 System.out.println("tree number:" + obj.getInt("tree"));
+	            	 renderRandomTree();
+	           	  	 isDialogShown = true;
+	             }
+	             
+	             System.out.println("light number:" + obj.getInt("light"));
+	             arduinoData = "";
 	             in.close();
 	          } catch (Exception e) { e.printStackTrace(); }
 	       }
-	    });
-	    
-      if(Gdx.input.isKeyPressed(Keys.A)){
-    	  renderRandomTree();
-    	  isDialogShown = true;
-      }
+	  });
       
       if(Gdx.input.isKeyPressed(Keys.ENTER)){
     	  isDialogShown = false;
