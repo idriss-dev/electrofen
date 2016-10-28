@@ -36,7 +36,8 @@ public class ElectroFunCop22 extends ApplicationAdapter {
     private static final int        WIDTH = 600;
     
     private static final int        TILE_UNIT = 25;
-    private static boolean 	isDialogShown = false;
+    private static boolean 	isDialogEarthShown = false;
+    private static boolean 	isDialogFireShown = false;
     
     private SerialPort comPort;
     
@@ -50,8 +51,10 @@ public class ElectroFunCop22 extends ApplicationAdapter {
     Texture                         moulinImage;              // #4
     Texture                         houseImage;
     Texture                         waterImage;
-    Texture[]                       earthImages;
-    Texture							dialogGirlImage;
+    Texture                         earthImage;
+    Texture                         fireImage;
+    Texture							dialogGirlEarthImage;
+    Texture							dialogGirlFireImage;
     
     TextureRegion[]                 girlRightFrames;   
     TextureRegion[]                 girlLeftFrames;
@@ -64,6 +67,7 @@ public class ElectroFunCop22 extends ApplicationAdapter {
     Array<Rectangle> grassList;
     Array<Rectangle> waterList;
     Array<Rectangle> treeList;
+    Array<Rectangle> lightList;
     
     Rectangle moulin;
     Rectangle house;
@@ -73,8 +77,8 @@ public class ElectroFunCop22 extends ApplicationAdapter {
     float girlX = HEIGHT / 2;
     float girlY = WIDTH / 2;
     
-    private static final int        EARTH_ACTION_TOTAL = 3;
     private int lastActionNum = 0;
+    private int lastActionFireNum = 0;
 
    @Override
    public void create() {
@@ -84,13 +88,11 @@ public class ElectroFunCop22 extends ApplicationAdapter {
 	   houseImage = new Texture(Gdx.files.internal("house.png"));
 	   waterImage = new Texture(Gdx.files.internal("water.png"));
 	   
-	   
-	   earthImages = new Texture[EARTH_ACTION_TOTAL];
-	   earthImages[0] = new Texture(Gdx.files.internal("earth-1.png"));
-	   earthImages[1] = new Texture(Gdx.files.internal("earth-2.png"));
-	   earthImages[2] = new Texture(Gdx.files.internal("earth-3.png"));
+	   earthImage = new Texture(Gdx.files.internal("earth-1.png"));
+	   fireImage = new Texture(Gdx.files.internal("fire-1.png"));
 			   
-	   dialogGirlImage = new Texture(Gdx.files.internal("girl-dialog.png"));
+	   dialogGirlEarthImage = new Texture(Gdx.files.internal("girl-dialog-earth.png"));
+	   dialogGirlFireImage = new Texture(Gdx.files.internal("girl-dialog-fire.png"));
 	   
        TextureRegion[][] tmp = TextureRegion.split(girlSheet, girlSheet.getWidth()/FRAME_GIRL_COLS, girlSheet.getHeight()/FRAME_GIRL_ROWS);              // #10
        
@@ -124,26 +126,91 @@ public class ElectroFunCop22 extends ApplicationAdapter {
        grassList = new Array<Rectangle>();
        waterList = new Array<Rectangle>();
        treeList = new Array<Rectangle>();
+       lightList = new Array<Rectangle>();
        
        renderGround();
        renderHouse();
        renderMoulin();
        renderWater();
           
-       spriteBatch = new SpriteBatch();    
+       spriteBatch = new SpriteBatch();  
+       
+       try{
+	    	//comPort = SerialPort.getCommPort("/com6");
+    	    comPort = SerialPort.getCommPorts()[0];
+		    comPort.openPort();
+		    comPort.addDataListener(new SerialPortDataListener() {
+		       @Override
+		       public int getListeningEvents() { return SerialPort.LISTENING_EVENT_DATA_AVAILABLE; }
+		       @Override
+		       public void serialEvent(SerialPortEvent event)
+		       {
+		          if (event.getEventType() != SerialPort.LISTENING_EVENT_DATA_AVAILABLE)
+		             return;
+		          comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 5000, 0);
+		          InputStream in = comPort.getInputStream();
+		          try
+		          {
+		        	 String arduinoData = "";
+		        	 char nextChar;
+		             for (int j = 0; j < 100; ++j){
+		            	 nextChar = (char)in.read();
+		            	 if(nextChar != '\r')
+		            		 arduinoData += nextChar;
+		            	 else
+		            		 break;
+		             } 
+		             	             
+		             try{
+		            	 JSONObject obj = new JSONObject(arduinoData);
+		            	 System.out.println("earth action number:" + obj.getInt("earth"));
+		            	 renderRandomTree(obj.getInt("earth"));
+		            	 renderRandomLight(obj.getInt("fire"));
+		             }catch(Exception e){
+		            	 System.out.println("bad value:" + arduinoData);
+		             }
+	            	 
+		             arduinoData = "";
+		             in.close();
+		          } catch (Exception e) { e.printStackTrace(); }
+		       }
+		  });	    	
+	    }catch(Exception e){
+	    	System.out.println("arduino not connected");
+	    }
    }
 
    private void renderRandomTree(int actionNum) {
-	  for(int i = lastActionNum; i < actionNum; i++){
-		  Rectangle tree = new Rectangle();
-	      tree.x = MathUtils.random(0, WIDTH-64);
-	      tree.y = MathUtils.random(0, HEIGHT-64);
-	      tree.width = 64;
-	      tree.height = 64;
-	      treeList.add(tree);
+	  if(lastActionNum != actionNum){
+		  isDialogEarthShown = true;
+		  for(int i = lastActionNum; i < actionNum; i++){
+			  Rectangle tree = new Rectangle();
+		      tree.x = MathUtils.random(0, WIDTH-64);
+		      tree.y = MathUtils.random(0, HEIGHT-64);
+		      tree.width = 64;
+		      tree.height = 64;
+		      treeList.add(tree);
+		  }
+		  lastActionNum = actionNum;
 	  }
-	  lastActionNum = actionNum;
+	  
    }
+   
+   private void renderRandomLight(int actionNum) {
+	   if(lastActionFireNum != actionNum){
+		  isDialogFireShown = true;
+		  for(int i = lastActionFireNum; i < actionNum; i++){
+			  Rectangle light = new Rectangle();
+			  light.x = MathUtils.random(0, WIDTH-64);
+			  light.y = MathUtils.random(0, HEIGHT-64);
+			  light.width = 64;
+			  light.height = 64;
+		      lightList.add(light);
+		  }
+		  lastActionFireNum = actionNum;
+	   }
+   }
+   
    private void spawnBucket() {
 //      Rectangle bucket = new Rectangle();
 //      bucket.x = MathUtils.random(0, 800-64);
@@ -209,57 +276,22 @@ public class ElectroFunCop22 extends ApplicationAdapter {
 	    girl.width = 64;
 	    girl.height = 64;
 	    
-	    try{
-	    	comPort = SerialPort.getCommPorts()[0];
-		    comPort.openPort();
-		    comPort.addDataListener(new SerialPortDataListener() {
-		       @Override
-		       public int getListeningEvents() { return SerialPort.LISTENING_EVENT_DATA_AVAILABLE; }
-		       @Override
-		       public void serialEvent(SerialPortEvent event)
-		       {
-		          if (event.getEventType() != SerialPort.LISTENING_EVENT_DATA_AVAILABLE)
-		             return;
-		          comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 5000, 0);
-		          InputStream in = comPort.getInputStream();
-		          try
-		          {
-		        	 String arduinoData = "";
-		        	 char nextChar;
-		             for (int j = 0; j < 100; ++j){
-		            	 nextChar = (char)in.read();
-		            	 if(nextChar != '\r')
-		            		 arduinoData += nextChar;
-		            	 else
-		            		 break;
-		             } 
-		             	             
-		             try{
-		            	 JSONObject obj = new JSONObject(arduinoData);
-		            	 System.out.println("earth action number:" + obj.getInt("earth"));
-		            	 renderRandomTree(obj.getInt("earth"));
-		           	  	 isDialogShown = true;
-		             }catch(Exception e){
-		            	 System.out.println("bad value:" + arduinoData);
-		             }
-	            	 
-		             arduinoData = "";
-		             in.close();
-		          } catch (Exception e) { e.printStackTrace(); }
-		       }
-		  });	    	
-	    }catch(Exception e){
-	    	System.out.println("arduino not connected");
-	    }
+	    
 	    
       
       if(Gdx.input.isKeyPressed(Keys.A)){
     	 renderRandomTree(9);
-   	  	 isDialogShown = true;
+   	  	 isDialogEarthShown = true;
       }
       
+      if(Gdx.input.isKeyPressed(Keys.B)){
+     	 renderRandomLight(9);
+     	 isDialogFireShown = true;
+       }
+      
       if(Gdx.input.isKeyPressed(Keys.ENTER)){
-    	  isDialogShown = false;
+    	  isDialogEarthShown = false;
+    	  isDialogFireShown = false;
       }
       
       if(Gdx.input.isKeyPressed(Keys.C)){
@@ -309,14 +341,23 @@ public class ElectroFunCop22 extends ApplicationAdapter {
        
        int earthImgIdx = 0;
        for(Rectangle earthImg: treeList) {
-    	   spriteBatch.draw(earthImages[earthImgIdx % 3], earthImg.x, earthImg.y);
+    	   spriteBatch.draw(earthImage, earthImg.x, earthImg.y);
     	   earthImgIdx++;
+       }
+
+       int fireImgIdx = 0;
+       for(Rectangle fireImg: lightList) {
+    	   spriteBatch.draw(fireImage, fireImg.x, fireImg.y);
+    	   fireImgIdx++;
        }
        
        spriteBatch.draw(moulinImage, moulin.x, moulin.y);
        spriteBatch.draw(houseImage, house.x, house.y);
-       if(isDialogShown){
-    	   spriteBatch.draw(dialogGirlImage, 0, 0);
+       if(isDialogEarthShown){
+    	   spriteBatch.draw(dialogGirlEarthImage, 0, 0);
+       }
+       else if(isDialogFireShown){
+    	   spriteBatch.draw(dialogGirlFireImage, 0, 0);
        }
        spriteBatch.end();
        
