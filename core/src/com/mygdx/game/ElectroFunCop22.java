@@ -181,8 +181,10 @@ public class ElectroFunCop22 extends ApplicationAdapter {
    }
 
    private void renderRandomTree(int actionNum) {
-	  if(lastActionNum != actionNum){
-		  isDialogEarthShown = true;
+	  isDialogEarthShown = true;
+	  System.out.println(lastActionNum + " -- " + actionNum);
+	  
+	  if(lastActionNum < actionNum){
 		  for(int i = lastActionNum; i < actionNum; i++){
 			  Rectangle tree = new Rectangle();
 		      tree.x = MathUtils.random(0, WIDTH-64);
@@ -191,14 +193,24 @@ public class ElectroFunCop22 extends ApplicationAdapter {
 		      tree.height = 64;
 		      treeList.add(tree);
 		  }
-		  lastActionNum = actionNum;
+	  }else{
+		  Iterator<Rectangle> iter = treeList.iterator();
+	      while(iter.hasNext() && lastActionNum > actionNum) {
+	           iter.next();
+	           iter.remove();
+	           lastActionNum--;
+	      }
 	  }
-	  
+		  
+	  lastActionNum = actionNum;
    }
    
    private void renderRandomLight(int actionNum) {
-	   if(lastActionFireNum != actionNum){
-		  isDialogFireShown = true;
+	  isDialogFireShown = true;
+	  
+	  System.out.println(lastActionFireNum + " -- " + actionNum);
+	  
+	  if(lastActionFireNum < actionNum){
 		  for(int i = lastActionFireNum; i < actionNum; i++){
 			  Rectangle light = new Rectangle();
 			  light.x = MathUtils.random(0, WIDTH-64);
@@ -207,17 +219,16 @@ public class ElectroFunCop22 extends ApplicationAdapter {
 			  light.height = 64;
 		      lightList.add(light);
 		  }
-		  lastActionFireNum = actionNum;
-	   }
-   }
-   
-   private void spawnBucket() {
-//      Rectangle bucket = new Rectangle();
-//      bucket.x = MathUtils.random(0, 800-64);
-//      bucket.y = MathUtils.random(0, 800-64);
-//      bucket.width = 64;
-//      bucket.height = 64;
-//      buckets.add(bucket);
+	  }else{
+		  Iterator<Rectangle> iter = lightList.iterator();
+	      while(iter.hasNext() && lastActionFireNum > actionNum) {
+	           iter.next();
+	           iter.remove();
+	           lastActionFireNum--;
+	      }
+	  }
+		  
+	  lastActionFireNum = actionNum;
    }
    
    private void renderGround() {
@@ -276,31 +287,29 @@ public class ElectroFunCop22 extends ApplicationAdapter {
 	    girl.width = 64;
 	    girl.height = 64;
 	    
-	    
-	    
-      
       if(Gdx.input.isKeyPressed(Keys.A)){
-    	 renderRandomTree(9);
+    	 renderRandomTree(5);
    	  	 isDialogEarthShown = true;
       }
       
       if(Gdx.input.isKeyPressed(Keys.B)){
-     	 renderRandomLight(9);
-     	 isDialogFireShown = true;
+    	 renderRandomTree(2);
+    	 isDialogEarthShown = true;
        }
       
+      if(Gdx.input.isKeyPressed(Keys.C)){
+     	 renderRandomLight(5);
+     	isDialogFireShown = true;
+       }
+       
+       if(Gdx.input.isKeyPressed(Keys.D)){
+    	 renderRandomLight(2);
+      	 isDialogFireShown = true;
+       }
+       
       if(Gdx.input.isKeyPressed(Keys.ENTER)){
     	  isDialogEarthShown = false;
     	  isDialogFireShown = false;
-      }
-      
-      if(Gdx.input.isKeyPressed(Keys.C)){
-    	  	Iterator<Rectangle> iter = treeList.iterator();
-	        while(iter.hasNext()) {
-	           iter.next();
-	           iter.remove();
-	           break;
-	        }
       }
 	   
 	   Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);                        
@@ -330,6 +339,8 @@ public class ElectroFunCop22 extends ApplicationAdapter {
 	   }
 	   
        spriteBatch.begin();
+       
+       
        for(Rectangle grassItem: grassList) {
     	   spriteBatch.draw(grassImage, grassItem.x, grassItem.y);
 	   }
@@ -338,6 +349,10 @@ public class ElectroFunCop22 extends ApplicationAdapter {
 	   }
        
        spriteBatch.draw(currentGirlFrame, girlX, girlY);
+       
+       spriteBatch.draw(moulinImage, moulin.x, moulin.y);
+       spriteBatch.draw(houseImage, house.x, house.y);
+       
        
        int earthImgIdx = 0;
        for(Rectangle earthImg: treeList) {
@@ -351,8 +366,7 @@ public class ElectroFunCop22 extends ApplicationAdapter {
     	   fireImgIdx++;
        }
        
-       spriteBatch.draw(moulinImage, moulin.x, moulin.y);
-       spriteBatch.draw(houseImage, house.x, house.y);
+       
        if(isDialogEarthShown){
     	   spriteBatch.draw(dialogGirlEarthImage, 0, 0);
        }
